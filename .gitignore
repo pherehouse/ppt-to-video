@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated files
+public/slides/*
+public/slides-audio/*
+src/slidesData.ts
+src/SlideshowVideo.tsx
+src/Root.tsx
+gen-audio.sh
+gen-slides-data.js
+
+# Build output
+out/
+dist/
+.tmp-ocr/
+.tmp-convert/
+
+# Config
+remotion.config.ts
+tsconfig.json
+package.json
+
+# OS files
+.DS_Store
+Thumbs.db
