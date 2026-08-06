@@ -11,9 +11,16 @@ if (!slideCount) {
 const FPS = 30;
 const PAD = 18;
 const OVERLAP = 15;
-const MAX_CHARS_PER_CUE = 28; // 约1-2句话，适合阅读
-const SOFT_SPLIT_CHARS = /(?<=[。！？!?；;])/; // 硬拆分：句末标点，优先在这里拆分
-const HARD_SPLIT_CHARS = /(?<=[，,、：:])/; // 软拆分：中间标点，超长时才用
+const MAX_CHARS_PER_CUE = 24; // 短句子，方便阅读
+const MIN_CHARS_PER_CUE = 8; // 避免太短的碎片
+// 标点权重：越大表示停顿越强，越适合拆分
+const PUNCTUATION_WEIGHT = new Map([
+  ['。', 10], ['！', 10], ['？', 10], ['.', 10], ['!', 10], ['?', 10],
+  ['；', 8], [';', 8],
+  ['，', 6], [',', 6],
+  ['：', 5], [':', 5],
+  ['、', 2], // 顿号停顿最短，尽量不在这里拆分
+]);
 
 const slides = [];
 
@@ -74,50 +81,55 @@ for (const s of slides) {
 }
 const totalDuration = totalFrom;
 
+// 找最佳拆分点：优先权重高的标点，其次尽量靠近文本中间，保证两边长度均衡
+function findBestSplitPoint(text) {
+  let bestIdx = -1;
+  let bestScore = -1;
+  const mid = text.length / 2;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const weight = PUNCTUATION_WEIGHT.get(ch);
+    if (weight !== undefined) {
+      // 拆分后两边都不能太短
+      const leftLen = i + 1;
+      const rightLen = text.length - leftLen;
+      if (leftLen < MIN_CHARS_PER_CUE || rightLen < MIN_CHARS_PER_CUE) continue;
+      // 分数 = 标点权重 - 距离中间的偏移惩罚（越靠近中间越好）
+      const distancePenalty = Math.abs(i - mid) / text.length;
+      const score = weight - distancePenalty;
+      if (score > bestScore) {
+        bestScore = score;
+        bestIdx = i + 1; // 拆分点在标点后面
+      }
+    }
+  }
+  return bestIdx;
+}
+
 function splitLongCue(text, startFrame, endFrame) {
   const totalFrames = endFrame - startFrame;
   const totalChars = text.length;
+  // edge-tts 原生分段已经按语音停顿做好语义拆分，长度合适直接返回
   if (totalChars <= MAX_CHARS_PER_CUE) return [{text, startFrame, endFrame}];
 
-  // First split by sentence-ending punctuation (。！？；) to get complete sentences
-  let sentences = text.split(SOFT_SPLIT_CHARS).filter((s) => s.trim());
-  
-  // If any single sentence is still too long, split it by commas/colons
-  const parts = [];
-  for (const sent of sentences) {
-    if (sent.length <= MAX_CHARS_PER_CUE) {
-      parts.push(sent);
-    } else {
-      // Split long sentence by middle punctuation
-      const subParts = sent.split(HARD_SPLIT_CHARS).filter((s) => s.trim());
-      // Merge short subparts together if they fit within MAX_CHARS_PER_CUE
-      let buf = '';
-      for (const sp of subParts) {
-        if ((buf + sp).length <= MAX_CHARS_PER_CUE) {
-          buf += sp;
-        } else {
-          if (buf) parts.push(buf);
-          buf = sp;
-        }
-      }
-      if (buf) parts.push(buf);
-    }
+  // 递归拆分：找到最佳拆分点，分成两段，每段继续判断是否需要拆分
+  const splitAt = findBestSplitPoint(text);
+  if (splitAt <= 0 || splitAt >= text.length) {
+    // 找不到可拆分标点，硬切（不推荐，正常中文都有标点）
+    const mid = Math.floor(text.length / 2);
+    return splitLongCue(text.slice(0, mid), startFrame, startFrame + Math.floor(totalFrames/2))
+      .concat(splitLongCue(text.slice(mid), startFrame + Math.floor(totalFrames/2), endFrame));
   }
 
-  // Now distribute frames proportionally to character count
-  const result = [];
-  let accFrames = 0;
-  for (let i = 0; i < parts.length; i++) {
-    const p = parts[i];
-    const frames = i === parts.length - 1 
-      ? totalFrames - accFrames 
-      : Math.round((p.length / totalChars) * totalFrames);
-    const s = startFrame + accFrames;
-    const e = s + frames;
-    result.push({text: p.trim(), startFrame: s, endFrame: e});
-    accFrames += frames;
-  }
-  return result;
+  const part1 = text.slice(0, splitAt).trim();
+  const part2 = text.slice(splitAt).trim();
+  const frames1 = Math.round((part1.length / totalChars) * totalFrames);
+  const frames2 = totalFrames - frames1;
+
+  return [
+    ...splitLongCue(part1, startFrame, startFrame + frames1),
+    ...splitLongCue(part2, startFrame + frames1, endFrame),
+  ];
 }
 
 function vttTimeToSec(s) {
