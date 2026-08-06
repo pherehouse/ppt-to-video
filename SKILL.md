@@ -110,16 +110,24 @@ This script will automatically:
 
 The auto-generated `gen-audio.sh` contains raw OCR text which is usually choppy, incomplete, and sounds robotic. **You must polish this into natural, flowing narration before proceeding.**
 
+**IMPORTANT: Semantic line breaks for subtitles**
+When writing narration, split each slide's script **directly into short complete sentences/phrases**, one per line in the `SCRIPTS` array. Use your LLM semantic understanding to break text at natural speech pauses - each line will become one subtitle.
+- Each line should be a natural phrase, 8-25 characters, complete semantic unit
+- Break at natural pauses (after clauses, between thoughts), like how people actually speak
+- Lines don't need to end with periods/commas (they get stripped automatically, YouTube style)
+- Only keep `?` `!` for questions/exclamations
+- Automatic punctuation splitting is only a fallback - good line breaks by you produce much better results
+
 Guidelines for good narration:
-- Rewrite bullet points into full, natural sentences
+- Write each line as a short, complete natural phrase, one subtitle per line
 - Add smooth transitional phrases between slides (e.g., "接下来我们看...", "首先...", "最后...")
 - Balance narration length across slides - avoid 3-second pages followed by 30-second pages
 - Fix any obvious OCR recognition errors
 - Keep language conversational, like a real presenter speaking
-- For Chinese content, add proper punctuation to improve TTS rhythm
+- You don't need trailing commas/periods at the end of each line (they will be cleaned up)
 
 After polishing (or confirming the script is acceptable), proceed. You can either:
-- Edit the `SCRIPTS` array directly in `gen-audio.sh`
+- Edit the `SCRIPTS` array directly in `gen-audio.sh`, with one short natural phrase per line
 - Present the polished script to the user for review/approval
 
 ---

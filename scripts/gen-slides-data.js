@@ -11,16 +11,11 @@ if (!slideCount) {
 const FPS = 30;
 const PAD = 18;
 const OVERLAP = 15;
-const MAX_CHARS_PER_CUE = 24; // 短句子，方便阅读
-const MIN_CHARS_PER_CUE = 8; // 避免太短的碎片
-// 标点权重：越大表示停顿越强，越适合拆分
-const PUNCTUATION_WEIGHT = new Map([
-  ['。', 10], ['！', 10], ['？', 10], ['.', 10], ['!', 10], ['?', 10],
-  ['；', 8], [';', 8],
-  ['，', 6], [',', 6],
-  ['：', 5], [':', 5],
-  ['、', 2], // 顿号停顿最短，尽量不在这里拆分
-]);
+const MAX_CHARS_PER_CUE = 30; // AI已经在文案中按语义拆成短句，这里只做超长兜底
+// 清理字幕文本：只保留问号感叹号，去掉逗号句号顿号分号冒号（YouTube风格）
+function cleanCueText(text) {
+  return text.replace(/[，。、；：,.;:]/g, '').trim();
+}
 
 const slides = [];
 
@@ -81,54 +76,45 @@ for (const s of slides) {
 }
 const totalDuration = totalFrom;
 
-// 找最佳拆分点：优先权重高的标点，其次尽量靠近文本中间，保证两边长度均衡
-function findBestSplitPoint(text) {
-  let bestIdx = -1;
-  let bestScore = -1;
-  const mid = text.length / 2;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const weight = PUNCTUATION_WEIGHT.get(ch);
-    if (weight !== undefined) {
-      // 拆分后两边都不能太短
-      const leftLen = i + 1;
-      const rightLen = text.length - leftLen;
-      if (leftLen < MIN_CHARS_PER_CUE || rightLen < MIN_CHARS_PER_CUE) continue;
-      // 分数 = 标点权重 - 距离中间的偏移惩罚（越靠近中间越好）
-      const distancePenalty = Math.abs(i - mid) / text.length;
-      const score = weight - distancePenalty;
-      if (score > bestScore) {
-        bestScore = score;
-        bestIdx = i + 1; // 拆分点在标点后面
-      }
-    }
-  }
-  return bestIdx;
-}
-
+// 兜底拆分：AI已经按语义拆分好短句，只有超长才拆分，优先在完整句子结束处拆分
 function splitLongCue(text, startFrame, endFrame) {
   const totalFrames = endFrame - startFrame;
   const totalChars = text.length;
-  // edge-tts 原生分段已经按语音停顿做好语义拆分，长度合适直接返回
-  if (totalChars <= MAX_CHARS_PER_CUE) return [{text, startFrame, endFrame}];
+  if (totalChars <= MAX_CHARS_PER_CUE) return [{text: cleanCueText(text), startFrame, endFrame}];
 
-  // 递归拆分：找到最佳拆分点，分成两段，每段继续判断是否需要拆分
-  const splitAt = findBestSplitPoint(text);
-  if (splitAt <= 0 || splitAt >= text.length) {
-    // 找不到可拆分标点，硬切（不推荐，正常中文都有标点）
-    const mid = Math.floor(text.length / 2);
-    return splitLongCue(text.slice(0, mid), startFrame, startFrame + Math.floor(totalFrames/2))
-      .concat(splitLongCue(text.slice(mid), startFrame + Math.floor(totalFrames/2), endFrame));
+  // 优先在句号/感叹号/问号处分句
+  const sentenceEnd = text.search(/[。！？!?]/);
+  if (sentenceEnd > 5 && sentenceEnd < text.length - 5) {
+    const splitAt = sentenceEnd + 1;
+    const part1 = text.slice(0, splitAt);
+    const part2 = text.slice(splitAt);
+    const frames1 = Math.round((part1.length / totalChars) * totalFrames);
+    const frames2 = totalFrames - frames1;
+    return [
+      ...splitLongCue(part1, startFrame, startFrame + frames1),
+      ...splitLongCue(part2, startFrame + frames1, endFrame),
+    ];
   }
 
-  const part1 = text.slice(0, splitAt).trim();
-  const part2 = text.slice(splitAt).trim();
-  const frames1 = Math.round((part1.length / totalChars) * totalFrames);
-  const frames2 = totalFrames - frames1;
+  // 实在没有句末标点，就在逗号处拆
+  const commaPos = text.search(/[，,]/);
+  if (commaPos > 5 && commaPos < text.length - 5) {
+    const splitAt = commaPos + 1;
+    const part1 = text.slice(0, splitAt);
+    const part2 = text.slice(splitAt);
+    const frames1 = Math.round((part1.length / totalChars) * totalFrames);
+    const frames2 = totalFrames - frames1;
+    return [
+      ...splitLongCue(part1, startFrame, startFrame + frames1),
+      ...splitLongCue(part2, startFrame + frames1, endFrame),
+    ];
+  }
 
+  // 兜底：硬切
+  const mid = Math.floor(text.length / 2);
   return [
-    ...splitLongCue(part1, startFrame, startFrame + frames1),
-    ...splitLongCue(part2, startFrame + frames1, endFrame),
+    {text: cleanCueText(text.slice(0, mid)), startFrame, endFrame: startFrame + Math.floor(totalFrames/2)},
+    {text: cleanCueText(text.slice(mid)), startFrame: startFrame + Math.floor(totalFrames/2), endFrame},
   ];
 }
 
@@ -154,6 +140,11 @@ import {SLIDES} from './slidesData';
 
 const OVERLAP = ${OVERLAP};
 const PAD = ${PAD};
+
+// YouTube-style subtitle cleaning: remove periods/commas/semicolons/colons, keep ?! for questions/exclamations
+function cleanSubtitleText(text: string): string {
+  return text.replace(/[，。、；：,.;:]/g, '').trim();
+}
 
 export const SlideshowVideo: React.FC = () => {
   return (
@@ -253,7 +244,7 @@ const SlidePage: React.FC<{
               letterSpacing: '0.02em',
             }}
           >
-            {activeCue.text}
+            {cleanSubtitleText(activeCue.text)}
           </div>
         </div>
       )}
