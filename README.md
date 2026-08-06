@@ -16,6 +16,8 @@
     ·
     <a href="#customization">Customization</a>
     ·
+    <a href="https://github.com/pherehouse/ppt-to-video">GitHub</a>
+    ·
     <a href="README.zh-CN.md">中文</a>
   </p>
 </p>
@@ -78,7 +80,7 @@ brew install poppler
 <summary><strong>Trae IDE</strong></summary>
 
 ```bash
-git clone https://github.com/your-username/ppt-to-video.git
+git clone https://github.com/pherehouse/ppt-to-video.git
 cp -r ppt-to-video ~/.trae/skills/ppt-to-video
 ```
 Restart Trae after installation.
@@ -88,7 +90,7 @@ Restart Trae after installation.
 <summary><strong>Claude Desktop</strong></summary>
 
 ```bash
-git clone https://github.com/your-username/ppt-to-video.git
+git clone https://github.com/pherehouse/ppt-to-video.git
 mkdir -p ~/.claude/skills
 cp -r ppt-to-video ~/.claude/skills/ppt-to-video
 ```

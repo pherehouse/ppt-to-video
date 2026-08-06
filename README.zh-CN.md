@@ -18,6 +18,8 @@
     ·
     <a href="#自定义配置">自定义配置</a>
     ·
+    <a href="https://github.com/pherehouse/ppt-to-video">GitHub</a>
+    ·
     <a href="README.md">English</a>
   </p>
 </p>
@@ -80,7 +82,7 @@ brew install poppler
 <summary><strong>Trae IDE</strong></summary>
 
 ```bash
-git clone https://github.com/your-username/ppt-to-video.git
+git clone https://github.com/pherehouse/ppt-to-video.git
 cp -r ppt-to-video ~/.trae/skills/ppt-to-video
 ```
 安装完成后重启 Trae 即可。
