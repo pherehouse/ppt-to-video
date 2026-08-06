@@ -1,6 +1,6 @@
 #!/bin/bash
 # ppt-to-video: Convert PPT/PPTX to narrated video with voiceover and subtitles
-# Repository: https://github.com/your-username/ppt-to-video
+# Repository: https://github.com/pherehouse/ppt-to-video
 #
 # Usage:
 #   ./ppt-to-video.sh <PPTX_FILE_OR_IMAGE_FOLDER> <OUTPUT_MP4> [VOICE] [RATE]
@@ -16,6 +16,12 @@
 
 set -e
 
+# Cleanup temporary directories on exit
+cleanup() {
+  rm -rf "$WORK_DIR/.tmp-ocr" "$WORK_DIR/.tmp-convert"
+}
+trap cleanup EXIT
+
 # ========== Configuration ==========
 INPUT_PATH="${1:?Usage: $0 <PPTX file or image folder> <Output MP4> [Voice] [Rate]
   Example: $0 ~/my-slides.pptx out/output.mp4}"
@@ -25,6 +31,14 @@ RATE="${4:-+15%}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK_DIR="$(pwd)"
+
+# Convert input to absolute path
+if [ -d "$INPUT_PATH" ]; then
+  INPUT_PATH="$(cd "$INPUT_PATH" && pwd)"
+elif [ -f "$INPUT_PATH" ]; then
+  INPUT_DIR="$(cd "$(dirname "$INPUT_PATH")" && pwd)"
+  INPUT_PATH="$INPUT_DIR/$(basename "$INPUT_PATH")"
+fi
 
 # ========== Color Output ==========
 RED='\033[0;31m'
@@ -295,5 +309,3 @@ for i in $(seq 1 $SLIDE_COUNT); do
   echo "--- Slide $i ---"
   head -8 ".tmp-ocr/slide-$n.txt"
 done
-
-rm -rf .tmp-convert
