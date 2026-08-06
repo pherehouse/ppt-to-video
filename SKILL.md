@@ -27,8 +27,10 @@ Invoke this skill **automatically** when the user:
 - 🎙️ AI voiceover - Microsoft Edge TTS, multiple voices available, default Chinese male voice (Yunxi) at 1.15x speed optimized for presentations
 - 📝 Smart subtitles - Automatically splits long sentences at punctuation (commas/periods) for readability, perfectly synced to audio
 - 🎬 Professional transitions - Smooth cross-dissolve between slides, full-slide display using `object-fit: contain` (no cropping, no panning, no shaking)
-- 🔍 Built-in OCR - Uses macOS native Vision framework to extract text from slides and generate a narration draft
-- 🤖 AI-assisted script writing - Agent can automatically polish raw OCR text into natural conversational narration
+- 🔍 **Dual recognition mode**:
+  - **Multimodal LLM preferred** (default when available): If you (the host AI) have vision/multimodal capabilities, directly view each slide image yourself - you understand charts, diagrams, layouts, and context far better than raw OCR
+  - **Built-in OCR fallback**: Uses macOS native Vision framework to extract text as a starting point when multimodal isn't available
+- 🤖 AI-assisted script writing - Automatically polish extracted content into natural conversational narration, with semantic line breaks for perfect subtitles
 - 🎞️ Professional output - 1920×1080 @ 30fps MP4, ready for sharing, uploading, or presentations
 - 🔧 Fully configurable - Adjust subtitle size, speed, transitions, voices, and more
 
@@ -108,7 +110,14 @@ This script will automatically:
 
 ### Step 3: Polish the Narration Script (CRITICAL - DO NOT SKIP)
 
-The auto-generated `gen-audio.sh` contains raw OCR text which is usually choppy, incomplete, and sounds robotic. **You must polish this into natural, flowing narration before proceeding.**
+The initialization script gives you raw OCR text as a starting point, but **if you are a multimodal/vision-capable LLM (which you almost always are), IGNORE THE RAW OCR TEXT AND DIRECTLY VIEW EACH SLIDE IMAGE YOURSELF**. This produces dramatically better results because you can:
+
+- Understand charts, graphs, flowcharts, diagrams, and images (OCR can't do this)
+- Interpret layout, visual hierarchy, and key points the speaker intended
+- Grasp context and relationships between elements that text extraction misses
+- Correct OCR errors that would otherwise propagate to the narration
+
+**Whether you use multimodal vision or raw OCR, you MUST rewrite the content into natural, flowing narration before proceeding.**
 
 **IMPORTANT: Semantic line breaks for subtitles**
 When writing narration, split each slide's script **directly into short complete sentences/phrases**, one per line in the `SCRIPTS` array. Use your LLM semantic understanding to break text at natural speech pauses - each line will become one subtitle.
@@ -122,7 +131,8 @@ Guidelines for good narration:
 - Write each line as a short, complete natural phrase, one subtitle per line
 - Add smooth transitional phrases between slides (e.g., "接下来我们看...", "首先...", "最后...")
 - Balance narration length across slides - avoid 3-second pages followed by 30-second pages
-- Fix any obvious OCR recognition errors
+- Fix any obvious recognition errors
+- If there are charts/diagrams, explain what they show in the narration
 - Keep language conversational, like a real presenter speaking
 - You don't need trailing commas/periods at the end of each line (they will be cleaned up)
 

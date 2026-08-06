@@ -43,7 +43,8 @@
 - 🧹 **Clean YouTube-style subtitles** - Removes unnecessary commas/periods automatically, keeps subtitles clean and easy to read
 - 📝 **Perfect sync** - Subtitles frame-accurately synced to audio using VTT timing
 - 🎬 **Professional transitions** - Smooth cross-dissolve, full-slide display without cropping or shaking
-- 🔍 **Built-in OCR** - macOS Vision framework extracts text to generate narration draft
+- 👁️ **Multimodal LLM understanding** - When your AI agent has vision capabilities, it directly reads and understands each slide (charts, diagrams, flowcharts, everything) - way better than plain OCR
+- 🔍 **Built-in OCR fallback** - macOS Vision framework extracts text as a starting point for non-multimodal agents
 - 🆕 **Zero setup required** - Works from any empty directory, automatically creates entire Remotion project from scratch
 - 🎞️ **1080p 30fps output** - Standard HD MP4 ready for sharing
 - 🔌 **Universal compatibility** - Works with Trae, Claude Desktop, Codex, OpenCode, and any custom agent that supports Markdown skills
