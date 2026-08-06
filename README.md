@@ -39,12 +39,14 @@
 
 - 📁 **Direct PPTX support** - Automatic conversion, no manual image export needed
 - 🎙️ **AI Voiceover** - Microsoft Edge TTS with multiple Chinese voices, optimized 1.15x default speed
-- 📝 **Smart subtitles** - Auto-split at punctuation for readability, perfectly synced to audio
+- 🧠 **LLM semantic subtitle splitting** - Your AI agent splits narration into natural short phrases at speech pauses for human-like subtitle breaks
+- 🧹 **Clean YouTube-style subtitles** - Removes unnecessary commas/periods automatically, keeps subtitles clean and easy to read
+- 📝 **Perfect sync** - Subtitles frame-accurately synced to audio using VTT timing
 - 🎬 **Professional transitions** - Smooth cross-dissolve, full-slide display without cropping or shaking
 - 🔍 **Built-in OCR** - macOS Vision framework extracts text to generate narration draft
-- 🤖 **AI-assisted workflow** - AI agent automatically polishes OCR text into natural narration
+- 🆕 **Zero setup required** - Works from any empty directory, automatically creates entire Remotion project from scratch
 - 🎞️ **1080p 30fps output** - Standard HD MP4 ready for sharing
-- � **Universal compatibility** - Works with Trae, Claude Desktop, Codex, OpenCode, and any custom agent that supports Markdown skills
+- 🔌 **Universal compatibility** - Works with Trae, Claude Desktop, Codex, OpenCode, and any custom agent that supports Markdown skills
 
 ## 📦 Prerequisites
 
