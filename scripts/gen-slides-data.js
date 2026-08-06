@@ -11,7 +11,9 @@ if (!slideCount) {
 const FPS = 30;
 const PAD = 18;
 const OVERLAP = 15;
-const MAX_CHARS_PER_CUE = 14;
+const MAX_CHARS_PER_CUE = 28; // 约1-2句话，适合阅读
+const SOFT_SPLIT_CHARS = /(?<=[。！？!?；;])/; // 硬拆分：句末标点，优先在这里拆分
+const HARD_SPLIT_CHARS = /(?<=[，,、：:])/; // 软拆分：中间标点，超长时才用
 
 const slides = [];
 
@@ -73,32 +75,47 @@ for (const s of slides) {
 const totalDuration = totalFrom;
 
 function splitLongCue(text, startFrame, endFrame) {
-  if (text.length <= MAX_CHARS_PER_CUE) return [{text, startFrame, endFrame}];
-  const parts = text.split(/(?<=[，、。；：,.])/).filter((s) => s.trim());
-  const result = [];
   const totalFrames = endFrame - startFrame;
   const totalChars = text.length;
-  let accFrames = 0;
-  let buf = '';
-  let bufFrames = 0;
-  for (const p of parts) {
-    if ((buf + p).length <= MAX_CHARS_PER_CUE) {
-      buf += p;
-      bufFrames += Math.round((p.length / totalChars) * totalFrames);
+  if (totalChars <= MAX_CHARS_PER_CUE) return [{text, startFrame, endFrame}];
+
+  // First split by sentence-ending punctuation (。！？；) to get complete sentences
+  let sentences = text.split(SOFT_SPLIT_CHARS).filter((s) => s.trim());
+  
+  // If any single sentence is still too long, split it by commas/colons
+  const parts = [];
+  for (const sent of sentences) {
+    if (sent.length <= MAX_CHARS_PER_CUE) {
+      parts.push(sent);
     } else {
-      if (buf) {
-        const s = startFrame + accFrames;
-        const e = s + bufFrames;
-        result.push({text: buf.trim(), startFrame: s, endFrame: e});
-        accFrames += bufFrames;
+      // Split long sentence by middle punctuation
+      const subParts = sent.split(HARD_SPLIT_CHARS).filter((s) => s.trim());
+      // Merge short subparts together if they fit within MAX_CHARS_PER_CUE
+      let buf = '';
+      for (const sp of subParts) {
+        if ((buf + sp).length <= MAX_CHARS_PER_CUE) {
+          buf += sp;
+        } else {
+          if (buf) parts.push(buf);
+          buf = sp;
+        }
       }
-      buf = p;
-      bufFrames = Math.round((p.length / totalChars) * totalFrames);
+      if (buf) parts.push(buf);
     }
   }
-  if (buf) {
+
+  // Now distribute frames proportionally to character count
+  const result = [];
+  let accFrames = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
+    const frames = i === parts.length - 1 
+      ? totalFrames - accFrames 
+      : Math.round((p.length / totalChars) * totalFrames);
     const s = startFrame + accFrames;
-    result.push({text: buf.trim(), startFrame: s, endFrame: endFrame});
+    const e = s + frames;
+    result.push({text: p.trim(), startFrame: s, endFrame: e});
+    accFrames += frames;
   }
   return result;
 }
